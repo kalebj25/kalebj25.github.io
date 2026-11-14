@@ -1,0 +1,108 @@
+---
+import Base from '../../layouts/Base.astro';
+import Foot from '../../components/Foot.astro';
+import { projects, kin, href, type Project } from '../../data/projects';
+
+export function getStaticPaths() {
+  return projects.map((p) => ({ params: { slug: p.slug }, props: { p } }));
+}
+
+const { p } = Astro.props as { p: Project };
+const at = projects.indexOf(p);
+const after = projects[(at + 1) % projects.length];
+const shares = kin(p);
+const light = p.ground.toUpperCase() === '#FFFFFF';
+---
+<Base title={`${p.name} · Kaleb Jackson`} description={p.line} paper={p.ground}>
+  <main>
+    <section class:list={['field', { light }]} style={`--g: ${p.ground}; --k: ${p.ink}; --a: ${p.accent}`} aria-labelledby="p-h">
+      <div class="wrap inner">
+        <header class="bar">
+          <a class="tap mono" href="/#bench">← The bench</a>
+          <a class="tap who" href="/">Kaleb Jackson</a>
+        </header>
+        <div class="hero">
+          <div class="words">
+            <div class="mono kicker">{p.no} · {p.kind} · {p.status}</div>
+            {p.logo
+              ? <h1 id="p-h" class="logo"><img src={p.logo.src} width={p.logo.width} height={p.logo.height} alt={p.name} /></h1>
+              : <h1 id="p-h">{p.name}</h1>}
+            <p>{p.line}</p>
+          </div>
+          <div class="shot" role="img" aria-label={`Placeholder for ${p.image}`}>[ {p.image} ]</div>
+        </div>
+        <div class="pager">
+          <nav aria-label="Projects" class="pips">
+            {projects.map((q) => (
+              <a href={href(q)} aria-label={q.name} aria-current={q === p ? 'page' : undefined}><span></span></a>
+            ))}
+          </nav>
+          <a class="next" href={href(after)}>Next: {after.name} →</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section class="row" aria-labelledby="c-h">
+        <h2 id="c-h" class="label">Connected to</h2>
+        <div class="body links">
+          <ul class="chips">
+            {p.ideas.map((t) => <li><span aria-hidden="true" style={`background: ${p.dot ?? p.ground}`}></span>{t}</li>)}
+          </ul>
+          {shares.map(({ project: q, via }) => (
+            <a class="kin" href={href(q)}><span aria-hidden="true" class="rule"></span><span><strong>{q.name}</strong> <span class="via">shares {via.join(' and ')}</span></span></a>
+          ))}
+        </div>
+      </section>
+
+      <section class="row three">
+        <div><h2 class="label">What it is</h2><p>[In your words: the idea, and why it exists]</p></div>
+        <div><h2 class="label">How it's made</h2><p>[The tools, the process, what you learned]</p></div>
+        <div><h2 class="label">Where it's going</h2><p>[What's next for it]</p></div>
+      </section>
+
+      <section class="gallery" aria-label="Gallery">
+        <div>[ image ]</div><div>[ image ]</div><div>[ image ]</div>
+      </section>
+
+      <Foot />
+    </div>
+  </main>
+</Base>
+
+<style>
+  .field { background: var(--g); color: var(--k); min-height: min(100svh, 760px); display: flex; }
+  .inner { width: 100%; display: flex; flex-direction: column; }
+  .field a:hover { color: var(--k); opacity: 0.75; }
+  .mono { font: 13px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px 0; }
+  .who { font-weight: 700; font-size: 18px; }
+  .hero { flex: 1; display: flex; flex-wrap: wrap; gap: 32px 40px; align-items: center; padding: 24px 0 40px; }
+  .words { flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+  .kicker { color: var(--a); letter-spacing: 0.08em; }
+  h1 { margin: 0; font: 800 clamp(56px, 10vw, 168px)/0.88 var(--display); letter-spacing: -0.045em; overflow-wrap: anywhere; }
+  h1.logo img { width: min(560px, 100%); }
+  .words p { margin: 0; max-width: 560px; font-size: 20px; line-height: 1.5; opacity: 0.9; }
+  .shot { flex: 2 1 280px; min-width: 0; aspect-ratio: 4 / 5; max-height: 480px; border-radius: 22px; border: 1.5px dashed var(--a); display: flex; align-items: center; justify-content: center; padding: 16px; text-align: center; font-size: 14px; opacity: 0.85; }
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 32px; }
+  .pips { display: flex; gap: 2px; }
+  .pips a { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .pips span { display: block; height: 8px; width: 8px; border-radius: 4px; background: var(--k); opacity: 0.45; transition: width .3s ease, opacity .3s ease; }
+  .pips a[aria-current] span { width: 28px; opacity: 1; }
+  .next { min-height: 48px; padding: 0 22px; border-radius: 24px; background: var(--k); color: var(--g); font-weight: 700; display: inline-flex; align-items: center; }
+  .field .next:hover { color: var(--g); }
+  @media (max-width: 640px) { .shot { aspect-ratio: 4 / 3; } .words p { font-size: 18px; } .gallery { grid-template-columns: repeat(2, 1fr); } }
+
+  .links { display: flex; flex-direction: column; gap: 14px; }
+  .chips { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips li { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--ink); font: 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .chips li span { width: 6px; height: 6px; border-radius: 50%; }
+  .kin { align-self: flex-start; min-height: 44px; display: flex; align-items: center; gap: 10px; font-size: 17px; }
+  .kin .rule { display: inline-block; width: 28px; height: 1px; background: var(--ink); flex: none; }
+  .via { color: var(--muted); }
+  .three { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; }
+  .three div { display: flex; flex-direction: column; gap: 10px; }
+  .three p { margin: 0; font-size: 17px; color: var(--ink-2); }
+  .gallery { padding: 8px 0 64px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .gallery div { aspect-ratio: 1; border: 1px dashed var(--rule); border-radius: 6px; display: flex; align-items: center; justify-content: center; font: 12px var(--mono); color: var(--muted); }
+</style>

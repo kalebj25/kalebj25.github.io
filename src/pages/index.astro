@@ -1,0 +1,102 @@
+---
+import Base from '../layouts/Base.astro';
+import Web from '../components/Web.astro';
+import Foot from '../components/Foot.astro';
+import { projects, href } from '../data/projects';
+---
+<Base title="Kaleb Jackson" description="Ideas, connected. Then made. Software, food, prints and art by Kaleb Jackson.">
+  <div class="wrap">
+    <header class="top">
+      <a class="name tap" href="/">Kaleb Jackson</a>
+      <nav aria-label="Main">
+        <a class="tap" href="#bench">Work</a>
+        <a class="tap" href="#now">Now</a>
+        <a class="tap" href="#resume">Resume</a>
+        <a class="tap" href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <h1>Ideas, connected. Then made.</h1>
+        <p>Technical Product Owner and AI Product Specialist, and a maker of software, food, prints and art. Pull the web around; pick a project to see what it's made of.</p>
+      </section>
+
+      <Web />
+
+      <section id="bench" class="bench" aria-labelledby="bench-h">
+        <h2 id="bench-h" class="label">On the bench</h2>
+        <ul>
+          {projects.map((p) => (
+            <li>
+              <a class="bench-card" href={href(p)}>
+                <div class="shot" style={`background: ${p.ground}; color: ${p.ink}`}>
+                  {p.logo ? <img src={p.logo.src} width={p.logo.width} height={p.logo.height} alt="" /> : <span>[ {p.image} ]</span>}
+                </div>
+                <div class="meta">
+                  <div class="row-sm"><span>{p.no}</span><span>{p.kind}</span></div>
+                  <h3>{p.name}</h3>
+                  <div class:list={['status', { live: p.status.endsWith('…') }]}>{p.status}</div>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="now" class="row">
+        <h2 class="label">Now</h2>
+        <ul class="body now">
+          <li><strong>ERGO</strong><span>A memory engine that hands it what's current</span></li>
+          <li><strong>This site</strong><span>Designed and built in the open</span></li>
+          <li><strong>LACUNA</strong><span>First prints when the printer arrives</span></li>
+        </ul>
+      </section>
+
+      <section id="resume" class="row">
+        <h2 class="label">Resume</h2>
+        <dl class="body resume">
+          <dt>Technical Product Owner, AI Product Specialist · fintech and mortgage</dt><dd>8+ yrs</dd>
+          <dt>Co-founder, Vanta Group · data and AI systems</dt><dd>Now</dd>
+          <dt>Certifications · Georgetown; University of Michigan with Simplilearn</dt><dd></dd>
+        </dl>
+      </section>
+    </main>
+
+    <Foot />
+  </div>
+</Base>
+
+<style>
+  .intro { padding: 56px 0 24px; display: flex; flex-wrap: wrap; gap: 20px 40px; align-items: flex-end; }
+  .intro h1 { margin: 0; flex: 3 1 520px; font-weight: 700; font-size: clamp(40px, 6vw, 80px); line-height: 0.98; letter-spacing: -0.035em; }
+  .intro p { margin: 0; flex: 1 1 260px; color: var(--ink-2); }
+  @media (max-width: 640px) { .intro { padding-top: 32px; } .intro h1 { flex-basis: 100%; } }
+
+  .bench { display: flex; flex-direction: column; gap: 24px; padding-bottom: 72px; }
+  .bench ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+  .bench-card { height: 100%; background: var(--card); border: 1px solid var(--ink); border-radius: 4px; display: flex; flex-direction: column; transition: transform .25s ease, box-shadow .25s ease; }
+  .bench-card:hover { color: var(--ink); transform: translateY(-4px) rotate(-0.4deg); box-shadow: 0 18px 40px rgba(27, 26, 23, 0.12); }
+  .shot { aspect-ratio: 4 / 3; border-bottom: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; padding: 16px; font: 12px var(--mono); text-align: center; }
+  .shot img { width: 70%; }
+  .meta { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .row-sm { display: flex; justify-content: space-between; gap: 8px; font: 12px var(--mono); color: var(--muted); }
+  .meta h3 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+  .status { font: 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .status.live { color: var(--ember); }
+
+  @media (max-width: 640px) {
+    .bench ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .shot { aspect-ratio: 1; font-size: 11px; }
+    .meta { padding: 12px; }
+    .row-sm { flex-direction: column; gap: 2px; }
+    .meta h3 { font-size: 19px; }
+  }
+
+  .now { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .now li { display: flex; flex-direction: column; gap: 4px; }
+  .now strong { font-size: 20px; }
+  .now span { color: var(--ink-2); }
+  .resume { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; font-size: 17px; }
+  .resume dd { margin: 0; font: 13px var(--mono); color: var(--muted); }
+</style>

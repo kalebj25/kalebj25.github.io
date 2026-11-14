@@ -1,0 +1,240 @@
+---
+// The web: you at the center as "…", projects around you in their colors, and the
+// ideas they share as small grey nodes. Laid out here at build time, so it reads
+// without JavaScript; the script below brings it to life.
+import { buildWeb } from '../data/web';
+import { projects } from '../data/projects';
+import { createSim, settle } from '../scripts/physics';
+
+const { nodes, edges } = buildWeb();
+const W = 1000, H = 560;
+const sim = createSim(nodes.map((n) => n.kind), edges, W, H);
+settle(sim);
+const at = sim.bodies.map((b) => ({ x: (b.x / W) * 100, y: (b.y / H) * 100 }));
+const pos = (i: number) => `left: ${at[i].x.toFixed(2)}%; top: ${at[i].y.toFixed(2)}%`;
+---
+<section class="web-wrap" aria-labelledby="web-h">
+  <h2 id="web-h" class="sr-only">A web of projects and the ideas between them</h2>
+  <p class="sr-only">
+    {projects.map((p) => `${p.name}: ${p.ideas.join(', ')}. `)}
+  </p>
+  <div class="web" data-web>
+    <svg class="lines" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+      {edges.map(([a, b]) => (
+        <line x1={sim.bodies[a].x} y1={sim.bodies[a].y} x2={sim.bodies[b].x} y2={sim.bodies[b].y} />
+      ))}
+    </svg>
+    {nodes.map((n, i) => n.kind === 'project' || n.kind === 'next' ? (
+      <button class:list={['node', n.kind]} style={`${pos(i)}; --c: ${n.color}`} data-i={i}
+        aria-haspopup="dialog" aria-label={`${n.label}: open its card`}>
+        <span class="dot" aria-hidden="true"></span>
+        <span class="name">{n.label}</span>
+      </button>
+    ) : (
+      <div class:list={['node', n.kind]} style={pos(i)} data-i={i} aria-hidden="true">
+        <span class="dot"></span>
+        <span class="name">{n.kind === 'me' ? '…' : n.label}</span>
+      </div>
+    ))}
+    <div class="card" role="dialog" aria-modal="false" aria-labelledby="web-card-h" hidden data-card>
+      <div class="label" data-card-kind></div>
+      <div id="web-card-h" class="card-name" data-card-name></div>
+      <p data-card-line></p>
+      <div class="card-do">
+        <a class="tap" data-card-open href="/">Open →</a>
+        <button type="button" class="close" aria-label="Close" data-card-close>×</button>
+      </div>
+    </div>
+    <div class="hint" aria-hidden="true">drag a node · pick a project</div>
+  </div>
+  <script type="application/json" data-web-data set:html={JSON.stringify({
+    kinds: nodes.map((n) => n.kind),
+    edges,
+    cards: nodes.map((n) => n.href ? { label: n.label, kind: n.kindLabel, line: n.line, href: n.href, ground: n.ground, ink: n.ink } : null),
+  })} />
+</section>
+
+<style>
+  .web-wrap { padding-bottom: 56px; }
+  .web {
+    position: relative; width: 100%; aspect-ratio: 1000 / 560;
+    border: 1px solid var(--ink); border-radius: 6px; background: var(--card);
+    overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  @media (max-width: 640px) { .web { aspect-ratio: auto; height: 540px; } }
+  .lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .lines line { stroke: var(--ink); stroke-opacity: 0.22; stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke-opacity .25s ease, stroke .25s ease; }
+  .lines line.lit { stroke: var(--lit, var(--ink)); stroke-opacity: 0.9; stroke-width: 2; }
+  .web.focus .lines line:not(.lit) { stroke-opacity: 0.08; }
+
+  .node {
+    position: absolute; transform: translate(-50%, -50%);
+    min-width: 44px; min-height: 44px; padding: 0; margin: 0; background: none; border: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    cursor: grab; z-index: 1; transition: opacity .25s ease;
+  }
+  .node.project, .node.next { cursor: pointer; z-index: 2; }
+  .node.me { z-index: 2; }
+  .web.focus .node:not(.near) { opacity: 0.25; }
+  .web.held .node { cursor: grabbing; }
+
+  .dot { display: block; border-radius: 50%; }
+  .idea .dot { width: 9px; height: 9px; background: var(--rule); }
+  .project .dot { width: 18px; height: 18px; background: var(--c); transition: box-shadow .25s ease; }
+  .project[aria-expanded='true'] .dot { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 20%, transparent); }
+  .next .dot { width: 18px; height: 18px; border: 1.5px dashed var(--muted); }
+  .me .dot { width: 12px; height: 12px; background: var(--ink); }
+
+  .name { white-space: nowrap; }
+  .idea .name { font: 11px var(--mono); color: var(--muted); }
+  .project .name, .next .name { font-weight: 700; font-size: 14px; color: var(--ink); }
+  .me .name { font: 15px/1 var(--mono); color: var(--ember); letter-spacing: 0.1em; }
+  @media (max-width: 640px) {
+    .idea .name { font-size: 10px; }
+    .project .name, .next .name { font-size: 13px; }
+  }
+
+  .card {
+    position: absolute; right: 16px; bottom: 16px; z-index: 3;
+    width: min(320px, calc(100% - 32px)); padding: 18px; border-radius: 14px;
+    background: var(--g); color: var(--k); box-shadow: 0 18px 40px rgba(27, 26, 23, 0.18);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card[hidden] { display: none; }
+  .card.light { border: 1px solid var(--ink); }
+  .card .label { font-size: 11px; opacity: 0.8; }
+  .card-name { font: 800 34px/1 var(--display); letter-spacing: -0.03em; }
+  .card p { margin: 0; font-size: 14px; line-height: 1.5; opacity: 0.9; }
+  .card-do { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .card-do a { font-weight: 700; color: var(--k); }
+  .card-do a:hover { color: var(--k); opacity: 0.75; }
+  .close { width: 44px; height: 44px; border-radius: 50%; background: none; border: 1px solid var(--k); color: var(--k); font-size: 18px; }
+  .hint { position: absolute; left: 16px; bottom: 12px; font: 11px var(--mono); color: var(--muted); }
+  @media (max-width: 640px) { .card { right: 8px; bottom: 8px; width: calc(100% - 16px); } }
+</style>
+
+<script>
+  import { createSim, step, settle, resize, type Kind, type Sim } from '../scripts/physics';
+
+  interface Card { label: string; kind: string; line: string; href: string; ground: string; ink: string }
+  const root = document.querySelector<HTMLElement>('[data-web]');
+  const raw = document.querySelector('[data-web-data]');
+  if (root && raw) {
+    const data = JSON.parse(raw.textContent || '{}') as { kinds: Kind[]; edges: [number, number][]; cards: (Card | null)[] };
+    const els = [...root.querySelectorAll<HTMLElement>('.node')];
+    const lines = [...root.querySelectorAll<SVGLineElement>('.lines line')];
+    const svg = root.querySelector('svg')!;
+    const card = root.querySelector<HTMLElement>('[data-card]')!;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const box = () => root.getBoundingClientRect();
+    let sim: Sim = createSim(data.kinds, data.edges, box().width, box().height);
+    if (still) settle(sim);
+
+    const draw = () => {
+      svg.setAttribute('viewBox', `0 0 ${sim.W} ${sim.H}`);
+      sim.bodies.forEach((b, i) => {
+        els[i].style.left = `${(b.x / sim.W) * 100}%`;
+        els[i].style.top = `${(b.y / sim.H) * 100}%`;
+      });
+      data.edges.forEach(([a, b], k) => {
+        const A = sim.bodies[a], B = sim.bodies[b], l = lines[k];
+        l.setAttribute('x1', String(A.x)); l.setAttribute('y1', String(A.y));
+        l.setAttribute('x2', String(B.x)); l.setAttribute('y2', String(B.y));
+      });
+    };
+
+    let running = false;
+    const tick = () => {
+      if (sim.alpha > 0.01 || sim.held !== null) { step(sim); draw(); requestAnimationFrame(tick); }
+      else running = false;
+    };
+    const wake = (alpha: number) => {
+      sim.alpha = Math.max(sim.alpha, alpha);
+      if (still) { settle(sim); draw(); return; }
+      if (!running) { running = true; requestAnimationFrame(tick); }
+    };
+    draw();
+    if (!still) wake(1);
+
+    // Focus: light a node's lines and fade the rest.
+    let picked: number | null = null;
+    const focus = (i: number | null) => {
+      root.classList.toggle('focus', i !== null);
+      const near = new Set<number>(i === null ? [] : [i]);
+      data.edges.forEach(([a, b], k) => {
+        const lit = i !== null && (a === i || b === i);
+        if (lit) { near.add(a); near.add(b); }
+        lines[k].classList.toggle('lit', lit);
+      });
+      els.forEach((el, k) => el.classList.toggle('near', near.has(k)));
+      const c = i !== null ? data.cards[i] : null;
+      root.style.setProperty('--lit', c ? (els[i!].style.getPropertyValue('--c') || 'var(--ink)') : 'var(--ink)');
+    };
+
+    const open = (i: number) => {
+      const c = data.cards[i];
+      if (!c) return;
+      picked = i;
+      card.style.setProperty('--g', c.ground);
+      card.style.setProperty('--k', c.ink);
+      card.classList.toggle('light', c.ground.toUpperCase() === '#FFFFFF');
+      card.querySelector('[data-card-kind]')!.textContent = c.kind;
+      card.querySelector('[data-card-name]')!.textContent = c.label;
+      card.querySelector('[data-card-line]')!.textContent = c.line;
+      const a = card.querySelector<HTMLAnchorElement>('[data-card-open]')!;
+      a.href = c.href; a.textContent = `Open ${c.label} →`;
+      card.hidden = false;
+      els.forEach((el, k) => el.hasAttribute('aria-haspopup') && el.setAttribute('aria-expanded', String(k === i)));
+      focus(i);
+    };
+    const close = () => {
+      const was = picked;
+      picked = null; card.hidden = true;
+      els.forEach((el) => el.hasAttribute('aria-haspopup') && el.setAttribute('aria-expanded', 'false'));
+      focus(null);
+      if (was !== null) els[was].focus();
+    };
+    card.querySelector('[data-card-close]')!.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && picked !== null) close(); });
+
+    // Drag any node; a press that doesn't move opens a project's card.
+    let start: [number, number] | null = null, moved = false;
+    els.forEach((el, i) => {
+      el.addEventListener('pointerdown', (e) => {
+        sim.held = i; start = [e.clientX, e.clientY]; moved = false;
+        root.classList.add('held');
+        el.setPointerCapture(e.pointerId);
+        wake(0.5);
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (sim.held !== i || !start) return;
+        if (Math.abs(e.clientX - start[0]) + Math.abs(e.clientY - start[1]) > 4) moved = true;
+        const r = box(), q = sim.bodies[i];
+        q.x = Math.max(0, Math.min(sim.W, e.clientX - r.left));
+        q.y = Math.max(0, Math.min(sim.H, e.clientY - r.top));
+        if (still) draw(); else wake(0.3);
+      });
+      const drop = () => {
+        if (sim.held !== i) return;
+        sim.held = null; start = null; root.classList.remove('held');
+        if (still) { settle(sim); draw(); } else wake(0.3);
+      };
+      el.addEventListener('pointerup', drop);
+      el.addEventListener('pointercancel', drop);
+      el.addEventListener('click', () => { if (!moved) open(i); });
+      el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && picked === null) focus(i); });
+      el.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && picked === null && sim.held === null) focus(null); });
+      el.addEventListener('focus', () => { if (picked === null) focus(i); });
+      el.addEventListener('blur', () => { if (picked === null) focus(null); });
+    });
+
+    // Keep the web filling its box when the window changes size.
+    new ResizeObserver(() => {
+      const r = box();
+      if (Math.abs(r.width - sim.W) < 1 && Math.abs(r.height - sim.H) < 1) return;
+      resize(sim, r.width, r.height);
+      draw(); wake(0.3);
+    }).observe(root);
+  }
+</script>
