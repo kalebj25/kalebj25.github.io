@@ -1,0 +1,4 @@
+#!/bin/sh
+# Blocks a commit that would publish keys, addresses, paths or personal data.
+# Enabled per clone with: git config core.hooksPath .githooks
+exec node tests/secrets.mjs --staged

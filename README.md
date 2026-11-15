@@ -16,4 +16,8 @@ npm run dev     # http://localhost:4321
 npm test        # build, check links, then layout in WebKit (needs: npx playwright install webkit)
 ```
 
+After cloning, turn on the hook that blocks commits carrying keys, network
+addresses, machine paths or personal email: `git config core.hooksPath .githooks`.
+The same check (`tests/secrets.mjs`) runs in `npm test` and before every deploy.
+
 Text in [brackets] is placeholder copy.

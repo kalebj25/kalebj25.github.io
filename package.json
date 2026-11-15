@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test": "astro build && node tests/check.mjs && node tests/layout.mjs"
+    "test": "node tests/secrets.mjs && astro build && node tests/secrets.mjs && node tests/check.mjs && node tests/layout.mjs"
   },
   "dependencies": {
     "astro": "7.4.7"
